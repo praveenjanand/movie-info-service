@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group5TicketsBooking Application for S2 Cinemas</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #ffffff; /* White background color */
+        }
+    </style>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        window.onload = function() {
+            $('#loginModal').modal('show');
+        };
+
+		function loginUser() {
+		    var username = document.getElementById('username').value;
+		    var password = document.getElementById('password').value;
+		
+		    fetch('http://localhost:8080/api/v1/users/login', {
+		        method: 'POST',
+		        headers: {
+		            'Content-Type': 'application/json'
+		        },
+		        body: JSON.stringify({
+		            username: username,
+		            password: password
+		        })
+		    })
+		    .then(response => {
+		        if (!response.ok) {
+		            throw new Error('Invalid username or password');
+		        }
+		        return response.json();
+		    })
+		    .then(data => {
+		        localStorage.setItem('token', data.token);
+		        localStorage.setItem('username', username); // Store the username in local storage
+		        $('#loginModal').modal('hide');
+		        $('#dateModal').modal('show'); // Show date modal after successful login
+		        fetchMoviesByDate();
+		    })
+		    .catch(error => {
+		        console.error('Error logging in:', error);
+		        var errorMessageElement = document.getElementById('loginError');
+		        errorMessageElement.innerText = error.message;
+		        errorMessageElement.style.display = 'block'; // Ensure div is visible
+		        errorMessageElement.style.color = 'red'; // Set color to red
+		    });
+		}
+
+	    function saveSelectedDate() {
+	        var selectedDate = document.getElementById('selectedDate').value;
+	        localStorage.setItem('selectedDate', selectedDate);
+	        $('#dateModal').modal('hide');
+	        fetchMoviesByDate(); // Fetch movies after date is selected and stored
+   	 }
+
+	function fetchMoviesByDate() {
+	    var token = localStorage.getItem('token');
+	    var selectedDate = localStorage.getItem('selectedDate');
+	    var username = localStorage.getItem('username');
+	    
+	    fetch('http://localhost:8081/api/v1/movie-info/findMoviesByDate', {
+	        method: 'POST',
+	        headers: {
+	            'Content-Type': 'application/json',
+	            'Authorization': 'Bearer ' + token // Include the token in the Authorization header
+	        },
+	        body: JSON.stringify({
+	            date: selectedDate,
+	            username: username,
+	            token: token
+	        })
+	    })
+	    .then(response => {
+	        if (!response.ok) {
+	            throw new Error('Failed to fetch movies');
+	        }
+	        return response.json();
+	    })
+	    .then(data => {
+	        renderMovies(data); // Call renderMovies() with the data received
+			localStorage.removeItem('selectedDate'); // Clear the selected date from local storage
+	   		localStorage.removeItem('userName'); // Clear the selected date from local storage
+	    })
+	    .catch(error => {
+	        console.error('Error fetching movies:', error);
+	    });
+	}
+
+        function renderMovies(movies) {
+            var movieContainer = document.getElementById('movie-container');
+            movieContainer.innerHTML = ''; // Clear existing content
+            
+            movies.forEach(function(movie) {
+                var card = document.createElement('div');
+                card.className = 'col-md-4 mb-4';
+                card.innerHTML = `
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">${movie.title}</h5>
+                            <p>Available Seats: ${movie.seats}</p>
+                            <ul class="list-group list-group-flush">
+                                ${movie.showtimes.split(',').map(function(showtime) {
+                                    return `
+                                        <li class="list-group-item">
+                                            <form action="/book" method="post">
+                                                <input type="hidden" name="movie_id" value="${movie.id}">
+                                                <input type="hidden" name="showtime" value="${showtime}">
+                                                Showtime: ${showtime} 
+                                                <input type="number" name="num_tickets" placeholder="Tickets" min="1" max="${movie.seats}" required>
+                                                <button type="submit" class="btn btn-primary">Book</button>
+                                            </form>
+                                        </li>
+                                    `;
+                                }).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                movieContainer.appendChild(card);
+            });
+        }
+    </script>
+    
+    <script>
+    function openRegistrationModal() {
+        $('#loginModal').modal('hide');
+        $('#registrationModal').modal('show');
+    }
+
+    function registerUser() {
+        var username = document.getElementById('registerUsername').value;
+        var password = document.getElementById('registerPassword').value;
+        var email = document.getElementById('registerEmail').value;
+
+        fetch('http://localhost:8080/api/v1/users/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password,
+                email: email
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Registration failed');
+            }
+            $('#registrationModal').modal('hide');
+            $('#loginModal').modal('show');
+        })
+        .catch(error => {
+            console.error('Error registering user:', error);
+            var errorMessageElement = document.getElementById('registrationError');
+            errorMessageElement.innerText = error.message;
+            errorMessageElement.style.display = 'block'; // Ensure div is visible
+            errorMessageElement.style.color = 'red'; // Set color to red
+        });
+    }
+</script>
+    
+</head>
+<body>
+    <!-- Login Modal -->
+<!-- Login Modal -->
+<div class="modal" id="loginModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Login</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="loginError" class="alert alert-danger" style="display: none;"></div>
+                <form onsubmit="event.preventDefault(); loginUser();">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                    <button type="button" class="btn btn-secondary" onclick="openRegistrationModal()">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Date Modal -->
+<div class="modal" id="dateModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Date</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="selectedDate">Select Date:</label>
+                    <input type="date" class="form-control" id="selectedDate" required>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="saveSelectedDate()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registration Modal -->
+<div class="modal" id="registrationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Register</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="registrationError" class="alert alert-danger"></div>
+                <form onsubmit="event.preventDefault(); registerUser();">
+                    <div class="form-group">
+                        <label for="registerUsername">Username</label>
+                        <input type="text" class="form-control" id="registerUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" class="form-control" id="registerPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" class="form-control" id="registerEmail" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-5">Cini Mini Multiplex Movie Ticket Booking Site</h1>
+        <div class="row justify-content-center" id="movie-container">
+            <!-- Movies will be dynamically rendered here -->
+        </div>
+    </div>
+</body>
+</html>

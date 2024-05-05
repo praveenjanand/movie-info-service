@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cini Mini Multiplex Movie Ticket Booking Site</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #ffffff; /* White background color */
+        }
+    </style>
+    <script>
+        // Function to trigger web service call on page load
+        window.onload = function() {
+            fetchMoviesByDate();
+        };
+
+        function fetchMoviesByDate() {
+            fetch('http://localhost:8081/api/v1/movie-info/findMoviesByDate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    date: '2024-05-05'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response data
+                renderMovies(data);
+            })
+            .catch(error => {
+                console.error('Error fetching movies:', error);
+            });
+        }
+
+        function renderMovies(movies) {
+            var movieContainer = document.getElementById('movie-container');
+            movieContainer.innerHTML = ''; // Clear existing content
+            
+            movies.forEach(function(movie) {
+                var card = document.createElement('div');
+                card.className = 'col-md-4 mb-4';
+                card.innerHTML = `
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">${movie.title}</h5>
+                            <p>Available Seats: ${movie.seats}</p>
+                            <ul class="list-group list-group-flush">
+                                ${movie.showtimes.split(',').map(function(showtime) {
+                                    return `
+                                        <li class="list-group-item">
+                                            <form action="/book" method="post">
+                                                <input type="hidden" name="movie_id" value="${movie.id}">
+                                                <input type="hidden" name="showtime" value="${showtime}">
+                                                Showtime: ${showtime} 
+                                                <input type="number" name="num_tickets" placeholder="Tickets" min="1" max="${movie.seats}" required>
+                                                <button type="submit" class="btn btn-primary">Book</button>
+                                            </form>
+                                        </li>
+                                    `;
+                                }).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                movieContainer.appendChild(card);
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-5">Cini Mini Multiplex Movie Ticket Booking Site</h1>
+        <div class="row justify-content-center" id="movie-container">
+            <!-- Movies will be dynamically rendered here -->
+        </div>
+    </div>
+</body>
+</html>
