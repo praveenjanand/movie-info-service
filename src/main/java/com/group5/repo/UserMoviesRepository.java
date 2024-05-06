@@ -6,11 +6,14 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
-import com.group5.dto.*;
+import com.group5.dto.MoviesUserReq;
+
 
 @Component
 @Repository
-public interface MoviesRepository extends MongoRepository<Movies, String> {
-	List<Movies> findByDate(String date);
-	Movies findByTitle(String title);
+public interface UserMoviesRepository extends MongoRepository<MoviesUserReq, String> {
+
+	List<MoviesUserReq> findByUserName(String userName);
+
+
 }

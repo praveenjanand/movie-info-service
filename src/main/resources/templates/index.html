@@ -7,11 +7,34 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         body {
-            background-color: #ffffff; /* White background color */
+            background-color: #f8f9fa; /* Light gray background color */
+        }
+        .card {
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.125);
+            border-radius: 0.25rem;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .card-body {
+            padding: 1.25rem;
+        }
+        .list-group-item {
+            padding: 0.75rem 1.25rem;
+            border: none;
+        }
+        .modal-body {
+            padding: 2rem;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
         }
     </style>
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-            <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         window.onload = function() {
             $('#loginModal').modal('show');
@@ -58,12 +81,63 @@
 	        localStorage.setItem('selectedDate', selectedDate);
 	        $('#dateModal').modal('hide');
 	        fetchMoviesByDate(); // Fetch movies after date is selected and stored
+	        displayLoggedInUserName();
    	 }
+   	 
+   	 
+	   	 // Function to retrieve booking details
+	function retrieveBooking() {
+	    var userName = localStorage.getItem('username');
+	
+	    fetch('http://localhost:8081/api/v1/movie-info/retrieveBooking', {
+	        method: 'POST',
+	        headers: {
+	            'Content-Type': 'application/json'
+	        },
+	        body: JSON.stringify({
+	            userName: userName
+	        })
+	    })
+	    .then(response => response.json())
+	    .then(data => {
+	        displayBookingDetails(data);
+	    })
+	    .catch(error => {
+	        console.error('Error retrieving booking:', error);
+	        // Handle error
+	    });
+	}
+	
+	
+	// Function to display booking details in modal
+	function displayBookingDetails(movies, userName) {
+	    var bookingModalTitle = document.getElementById('bookingModalTitle');
+	    var userNameElement = document.getElementById('userName');
+	    userNameElement.innerText = userName;
+	
+	    var bookingListElement = document.getElementById('bookingList');
+	    bookingListElement.innerHTML = ''; // Clear existing content
+	
+	    if (movies.length === 0) {
+	        bookingListElement.innerHTML = '<p>No movies booked yet.</p>';
+	    } else {
+	        var movieList = '<ul>';
+	        movies.forEach(movie => {
+	            movieList += `<li>${movie}</li>`;
+	        });
+	        movieList += '</ul>';
+	        bookingListElement.innerHTML = movieList;
+	    }
+	
+	    // Show the modal
+	    $('#bookingDetailsModal').modal('show');
+	}
+	   	 
 
 	function fetchMoviesByDate() {
 	    var token = localStorage.getItem('token');
 	    var selectedDate = localStorage.getItem('selectedDate');
-	    var username = localStorage.getItem('username');
+	    var userName = localStorage.getItem('username');
 	    
 	    fetch('http://localhost:8081/api/v1/movie-info/findMoviesByDate', {
 	        method: 'POST',
@@ -73,7 +147,7 @@
 	        },
 	        body: JSON.stringify({
 	            date: selectedDate,
-	            username: username,
+	            userName: userName,
 	            token: token
 	        })
 	    })
@@ -93,42 +167,127 @@
 	    });
 	}
 
-        function renderMovies(movies) {
-            var movieContainer = document.getElementById('movie-container');
-            movieContainer.innerHTML = ''; // Clear existing content
-            
-            movies.forEach(function(movie) {
-                var card = document.createElement('div');
-                card.className = 'col-md-4 mb-4';
-                card.innerHTML = `
-                    <div class="card border-primary">
-                        <div class="card-body">
-                            <h5 class="card-title">${movie.title}</h5>
-                            <p>Available Seats: ${movie.seats}</p>
-                            <ul class="list-group list-group-flush">
-                                ${movie.showtimes.split(',').map(function(showtime) {
-                                    return `
-                                        <li class="list-group-item">
-                                            <form action="/book" method="post">
-                                                <input type="hidden" name="movie_id" value="${movie.id}">
-                                                <input type="hidden" name="showtime" value="${showtime}">
-                                                Showtime: ${showtime} 
-                                                <input type="number" name="num_tickets" placeholder="Tickets" min="1" max="${movie.seats}" required>
-                                                <button type="submit" class="btn btn-primary">Book</button>
-                                            </form>
-                                        </li>
-                                    `;
-                                }).join('')}
-                            </ul>
-                        </div>
+    function renderMovies(movies) {
+        var movieContainer = document.getElementById('movie-container');
+        movieContainer.innerHTML = ''; // Clear existing content
+        
+        movies.forEach(function(movie, index) {
+            var totalSeats = calculateTotalSeats(movie.seats);
+            var card = document.createElement('div');
+            card.className = 'col-md-4 mb-4';
+            card.innerHTML = `
+                <div class="card border-primary">
+                    <div class="card-body" id="card-${index}">
+                        <h5 class="card-title">${movie.title}</h5>
+                        <p>Available Seats: ${totalSeats}</p>
+                        <ul class="list-group list-group-flush">
+                            ${movie.showtimes.split(',').map(function(showtime, showtimeIndex) {
+                                var seats = movie.seats.split(',')[showtimeIndex];
+                                return `
+                                    <li class="list-group-item">
+                                        <form action="/book" method="post" onsubmit="bookTicket(event, '${movie.id}', '${movie.title}', '${index}')">
+                                            <input type="hidden" name="movie_id" value="${movie.id}">
+                                            <input type="hidden" name="showtime" value="${showtime}">
+                                            Showtime: ${showtime} 
+                                            <input type="number" name="num_tickets" placeholder="${seats}" min="1" max="${seats}" oninput="validateInput(this, ${seats})" required>
+                                            <button type="submit" class="btn btn-primary">Book</button>
+                                        </form>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
                     </div>
-                `;
-                movieContainer.appendChild(card);
-            });
-        }
-    </script>
+                </div>
+            `;
+            movieContainer.appendChild(card);
+        });
+    }
+
+
+		function calculateTotalSeats(seatsString) {
+		  // Handle empty or invalid input gracefully
+		  if (!seatsString || !seatsString.trim()) {
+		    return 0;
+		  }
+		
+		  // Split the string into an array of numbers
+		  const numbers = seatsString.split(",").map(Number);
+		
+		  // Validate that all elements are valid numbers
+		  if (numbers.some(isNaN)) {
+		    throw new Error("Invalid input: String contains non-numeric values.");
+		  }
+		
+		  // Calculate the sum using reduce for efficiency
+		  const total = numbers.reduce((acc, num) => acc + num, 0);
+		
+		  return total;
+		}
     
-    <script>
+
+
+// Function to validate user input
+function validateInput(input, defaultValue) {
+    if (input.value > defaultValue) {
+        input.value = defaultValue; // Reset value to default if user enters more than default
+    }
+}
+
+
+// Function to book tickets
+    function bookTicket(event, movieId, movieTitle, cardIndex) {
+        event.preventDefault(); // Prevent form submission
+        
+        var username = localStorage.getItem('username');
+        var numTickets = '';
+        var cardId = `card-${cardIndex}`;
+        var cardElement = document.getElementById(cardId);
+        
+   cardElement.querySelectorAll('input[name="num_tickets"]').forEach(function(input, index) {
+        var value = input.value || '0'; // Use input value if present, otherwise zero
+        numTickets += value;
+        if (index < cardElement.querySelectorAll('input[name="num_tickets"]').length - 1) {
+            numTickets += ',';
+        }
+    });
+        
+        fetch('http://localhost:8081/api/v1/movie-info/bookMovie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userName: username,
+                movie_id: movieId,
+                movieName: movieTitle,
+                noOfTickets: numTickets
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to book tickets');
+            }
+            showSuccessMessage(movieTitle);
+        })
+        .catch(error => {
+            console.error('Error booking tickets:', error);
+            // Handle error
+        });
+    }
+
+
+		// Function to show success message in modal
+			function showSuccessMessage(movieTitle) {
+			    var successMessageElement = document.getElementById('successMessage');
+			    successMessageElement.innerText = `Booking successful for ${movieTitle}.`;
+			    $('#successModal').modal('show');
+			
+			    // Hide success modal and show date modal again
+			    $('#successModal').on('hidden.bs.modal', function () {
+			        $('#dateModal').modal('show');
+			    });
+			}
+	
     function openRegistrationModal() {
         $('#loginModal').modal('hide');
         $('#registrationModal').modal('show');
@@ -165,6 +324,50 @@
             errorMessageElement.style.color = 'red'; // Set color to red
         });
     }
+    
+    
+    function showSuccessMessage(movieTitle) {
+    var successMessageElement = document.getElementById('successMessage');
+    successMessageElement.innerText = `Booking successful for ${movieTitle}.`;
+    $('#successModal').modal('show');
+    
+    // Hide success modal and show date modal again
+    $('#successModal').on('hidden.bs.modal', function () {
+        $('#dateModal').modal('show');
+    });
+    
+	}
+	// Function to display logged-in user's name
+	function displayLoggedInUserName() {
+	    var loggedInUserName = localStorage.getItem('username');
+	    var loggedInUserNameElement = document.getElementById('loggedInUserName');
+	    loggedInUserNameElement.innerText = loggedInUserName;
+	}
+	
+	// Function to retrieve booking details
+function retrieveBooking() {
+    var userName = localStorage.getItem('username');
+
+    fetch('http://localhost:8081/api/v1/movie-info/retrieveBooking', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            userName: userName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        displayBookingDetails(data);
+    })
+    .catch(error => {
+        console.error('Error retrieving booking:', error);
+        // Handle error
+    });
+}
+	
+
 </script>
     
 </head>
@@ -212,7 +415,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="selectedDate">Select Date:</label>
-                    <input type="date" class="form-control" id="selectedDate" required>
+			<input type="date" class="form-control" id="selectedDate" required>
                 </div>
                 <button type="button" class="btn btn-primary" onclick="saveSelectedDate()">Submit</button>
             </div>
@@ -252,8 +455,63 @@
     </div>
 </div>
 
+<!-- Success Modal -->
+<div class="modal" id="successModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Booking Status</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal" id="bookingDetailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bookingModalTitle">Movies booked by you</span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="bookingList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light" style="background-color: #f8f9fa;">
+    <span class="navbar-brand">Group5TicketsBooking</span>
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+            <span class="nav-link">Hi, <span id="loggedInUserName"></span></span>
+        </li>
+			<li class="nav-item">
+			    <a class="nav-link" href="#" id="changeDateLink" onclick="$('#dateModal').modal('show'); ">Change Date</a>
+			</li>
+
+        <li class="nav-item">
+            <a class="nav-link" href="#" onclick="retrieveBooking()">Booking Info</a>
+        </li>
+    </ul>
+</nav>
+
+
     <div class="container mt-5">
-        <h1 class="text-center mb-5">Cini Mini Multiplex Movie Ticket Booking Site</h1>
+        <h1 class="text-center mb-5">Group5TicketsBooking Application for S2 Cinemas</h1>
         <div class="row justify-content-center" id="movie-container">
             <!-- Movies will be dynamically rendered here -->
         </div>

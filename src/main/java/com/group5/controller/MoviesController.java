@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.group5.dto.AddMoviesRequest;
+import com.group5.dto.BookMovies;
 import com.group5.dto.GetMoviesRequest;
 import com.group5.dto.Movies;
 import com.group5.service.AuthService;
@@ -55,5 +56,16 @@ public class MoviesController {
 	            throw new IllegalArgumentException("Bearer token not found in Authorization header");
 	        }
 	    }
+	    
+	    @PostMapping("/bookMovie")
+	    public ResponseEntity<String> bookMovie(@RequestBody BookMovies reqObj) {
+	        String moviesList = moviesService.bookMovie(reqObj);
+	        return ResponseEntity.ok(moviesList);
+	    }
 
+	    @PostMapping("/retrieveBooking")
+	    public ResponseEntity<List<String>> retrieveBooking(@RequestBody BookMovies reqObj) {
+	    	List<String> moviesList = moviesService.retrieveBooking(reqObj);
+	        return ResponseEntity.ok(moviesList);
+	    }
 }

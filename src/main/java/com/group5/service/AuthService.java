@@ -21,6 +21,7 @@ public class AuthService {
     	GetMoviesRequest request = new GetMoviesRequest();
     	 request.setToken(token);
          request.setUserName(userName);
+         System.out.println("Inside validateToken username" +userName);
          boolean returnFlag = true;
          HttpHeaders headers = new HttpHeaders();
          headers.add("Content-Type", "application/json");
