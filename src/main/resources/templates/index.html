@@ -44,7 +44,7 @@
 		    var username = document.getElementById('username').value;
 		    var password = document.getElementById('password').value;
 		
-		    fetch('http://localhost:8080/api/v1/users/login', {
+		    fetch('http://4.188.90.60:8080/api/v1/users/login', {
 		        method: 'POST',
 		        headers: {
 		            'Content-Type': 'application/json'
@@ -89,7 +89,7 @@
 	function retrieveBooking() {
 	    var userName = localStorage.getItem('username');
 	
-	    fetch('http://localhost:8081/api/v1/movie-info/retrieveBooking', {
+	    fetch('http://4.188.90.60:8081/api/v1/movie-info/retrieveBooking', {
 	        method: 'POST',
 	        headers: {
 	            'Content-Type': 'application/json'
@@ -113,7 +113,6 @@
 	function displayBookingDetails(movies, userName) {
 	    var bookingModalTitle = document.getElementById('bookingModalTitle');
 	    var userNameElement = document.getElementById('userName');
-	    userNameElement.innerText = userName;
 	
 	    var bookingListElement = document.getElementById('bookingList');
 	    bookingListElement.innerHTML = ''; // Clear existing content
@@ -139,7 +138,7 @@
 	    var selectedDate = localStorage.getItem('selectedDate');
 	    var userName = localStorage.getItem('username');
 	    
-	    fetch('http://localhost:8081/api/v1/movie-info/findMoviesByDate', {
+	    fetch('http://4.188.90.60:8081/api/v1/movie-info/findMoviesByDate', {
 	        method: 'POST',
 	        headers: {
 	            'Content-Type': 'application/json',
@@ -251,7 +250,7 @@ function validateInput(input, defaultValue) {
         }
     });
         
-        fetch('http://localhost:8081/api/v1/movie-info/bookMovie', {
+        fetch('http://4.188.90.60:8081/api/v1/movie-info/bookMovie', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -298,7 +297,7 @@ function validateInput(input, defaultValue) {
         var password = document.getElementById('registerPassword').value;
         var email = document.getElementById('registerEmail').value;
 
-        fetch('http://localhost:8080/api/v1/users/register', {
+        fetch('http://4.188.90.60:8080/api/v1/users/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -348,7 +347,7 @@ function validateInput(input, defaultValue) {
 function retrieveBooking() {
     var userName = localStorage.getItem('username');
 
-    fetch('http://localhost:8081/api/v1/movie-info/retrieveBooking', {
+    fetch('http://4.188.90.60:8081/api/v1/movie-info/retrieveBooking', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
