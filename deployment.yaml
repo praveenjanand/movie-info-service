@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: movie-info-service-deployment
-        image: giridharaguptha/ticket-booking-movie-info-service:latest
+        image: giridharaguptha/ticket-booking-movie-info-service:1.0.0
         ports:
         - containerPort: 8081
 ---
