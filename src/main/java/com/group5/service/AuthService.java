@@ -29,7 +29,7 @@ public class AuthService {
         HttpEntity<GetMoviesRequest> requestEntity = new HttpEntity<>(request, headers);
     	
             ResponseEntity<Boolean> response = restTemplate.postForEntity(
-                    "http://4.188.90.60:8080/api/v1/users/validateToken",
+                    "http://localhost:8080/api/v1/users/validateToken",
                     requestEntity,
                     Boolean.class
         );
